@@ -57,9 +57,9 @@ scan_infosource.iterables=[('scan', scans)]
 
 # select files
 templates={'rest' : 'niftis/{subject}/{session}/{scan}.nii.gz',
-           'dicom':'dicoms/{subject}/{session}/{scan}', # address tar.xz
-           'uni_lowres' : 'struct/uni/{subject}*UNI_Images_merged.nii.gz', # change to lowres
-           't1_lowres' : 'struct/t1/{subject}*T1_Images_merged.nii.gz' # change to lowres
+           'dicom':'dicoms/{subject}/{session}/{scan}', # address tar.xz for example dicom...
+           'uni_lowres' : 'niftis/{subject}/{session}/MP2RAGE_UNI.nii.gz', # changed to lowres
+           't1_lowres' : 'niftis/{subject}/{session}/MP2RAGE_T1.nii.gz' # changed to lowres
            }
            # 'brain_mask' : 'struct/mask/{subject}*mask.nii.gz', # extract
            # 'segmentation' : 'struct/seg/{subject}*lbls_merged.nii.gz', # use freesurfer output instead
@@ -132,14 +132,14 @@ biasfield = Node(ants.segmentation.N4BiasFieldCorrection(save_bias=True),
                  name='biasfield')
 preproc.connect([(median, biasfield, [('median_file', 'input_image')])])
 
-# perform linear coregistration in two steps, median2lowres, lowres2highres
+# perform linear coregistration in ONE step: median2lowres
 coreg=create_coreg_pipeline()
 coreg.inputs.inputnode.fs_subjects_dir = freesurfer_dir
  
-preproc.connect([(selectfiles, coreg, [('uni_highres', 'inputnode.uni_highres')]),
-                 (biasfield, coreg, [('output_image', 'inputnode.epi_median')]),
-                 (subject_infosource, coreg, [('subject', 'inputnode.fs_subject_id')])
-                 ])
+# preproc.connect([(selectfiles, coreg, [('uni_highres', 'inputnode.uni_highres')]),
+#                 (biasfield, coreg, [('output_image', 'inputnode.epi_median')]),
+#                 (subject_infosource, coreg, [('subject', 'inputnode.fs_subject_id')])
+#                 ])
 
 # perform nonlinear coregistration 
 nonreg=create_nonlinear_pipeline()
