@@ -1,4 +1,3 @@
-import pandas as pd
 from nipype.pipeline.engine import Node, Workflow, MapNode
 import nipype.interfaces.utility as util
 import nipype.interfaces.io as nio
@@ -14,14 +13,7 @@ from functions import strip_rois_func, get_info, median, motion_regressors, extr
 from linear_coreg import create_coreg_pipeline
 from nonlinear_coreg import create_nonlinear_pipeline
 
-
 # read in subjects and file names
-# df=pd.read_csv('/scr/ilz3/myelinconnect/subjects.csv', header=0)
-# subjects_db=list(df['DB'])
-# subjects_trt=list(df['TRT'])
-# subjects=[]
-# for sub in range(len(subjects_db)):
-#     subjects.append(subjects_db[sub]+'_'+subjects_trt[sub])
 subjects=['sub001', 'sub002', 'sub003', 'sub004', 'sub005', 'sub006', 
           'sub007', 'sub008', 'sub009', 'sub010', 'sub011', 'sub012', 
           'sub013', 'sub014', 'sub015', 'sub016', 'sub017', 'sub018', 
@@ -67,11 +59,12 @@ scan_infosource.iterables=[('scan', scans)]
 templates={'rest' : 'niftis/{subject}/{session}/{scan}.nii.gz',
            'dicom':'dicoms/{subject}/{session}/{scan}', # address tar.xz
            'uni_lowres' : 'struct/uni/{subject}*UNI_Images_merged.nii.gz', # change to lowres
-           't1_lowres' : 'struct/t1/{subject}*T1_Images_merged.nii.gz', # change to lowres
-           'brain_mask' : 'struct/mask/{subject}*mask.nii.gz', # extract
-           'segmentation' : 'struct/seg/{subject}*lbls_merged.nii.gz', # use freesurfer output instead
-           'csfmask' : 'struct/csfmask/{subject}*T1_Images_merged_seg_merged_sub_csf.nii.gz' # use freesurfer output instead
-           }    
+           't1_lowres' : 'struct/t1/{subject}*T1_Images_merged.nii.gz' # change to lowres
+           }
+           # 'brain_mask' : 'struct/mask/{subject}*mask.nii.gz', # extract
+           # 'segmentation' : 'struct/seg/{subject}*lbls_merged.nii.gz', # use freesurfer output instead
+           # 'csfmask' : 'struct/csfmask/{subject}*T1_Images_merged_seg_merged_sub_csf.nii.gz' # use freesurfer output instead
+           # }    
 selectfiles = Node(nio.SelectFiles(templates, base_directory=data_dir),
                    name="selectfiles")
 
