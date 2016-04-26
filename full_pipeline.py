@@ -16,21 +16,26 @@ from nonlinear_coreg import create_nonlinear_pipeline
 
 
 # read in subjects and file names
-df=pd.read_csv('/scr/ilz3/myelinconnect/subjects.csv', header=0)
-subjects_db=list(df['DB'])
+# df=pd.read_csv('/scr/ilz3/myelinconnect/subjects.csv', header=0)
+# subjects_db=list(df['DB'])
 # subjects_trt=list(df['TRT'])
 # subjects=[]
 # for sub in range(len(subjects_db)):
 #     subjects.append(subjects_db[sub]+'_'+subjects_trt[sub])
-subjects=['KSYT', 'WSFT']
+subjects=['sub001', 'sub002', 'sub003', 'sub004', 'sub005', 'sub006', 
+          'sub007', 'sub008', 'sub009', 'sub010', 'sub011', 'sub012', 
+          'sub013', 'sub014', 'sub015', 'sub016', 'sub017', 'sub018', 
+          'sub019', 'sub020', 'sub021', 'sub022']
 # sessions to loop over
-sessions=['rest1_1' ,'rest1_2', 'rest2_1', 'rest2_2']
+sessions=['session_1' ,'session_2']
+# scans to loop over
+scans=['rest_full_brain_1', 'rest_full_brain_2']
 
 # directories
-working_dir = '/scr/ilz3/myelinconnect/working_dir/' 
-data_dir= '/scr/ilz3/myelinconnect/'
-out_dir = '/scr/ilz3/myelinconnect/resting/preprocessed/'
-freesurfer_dir = '/scr/ilz3/myelinconnect/freesurfer/' # freesurfer reconstruction of lowres is assumed
+working_dir = '/scr/animals1/myelinconnect/working_dir/' 
+data_dir= '/scr/animals1/myelinconnect/'
+out_dir = '/scr/animals1/myelinconnect/resting/preprocessed/'
+freesurfer_dir = '/scr/animals1/myelinconnect/freesurfer/' # freesurfer reconstruction of lowres is assumed
 
 # set fsl output type to nii.gz
 fsl.FSLCommand.set_default_output_type('NIFTI_GZ')
@@ -46,15 +51,20 @@ preproc.config['execution']['crashdump_dir'] = preproc.base_dir + "/crash_files"
 # iterate over subjects
 subject_infosource = Node(util.IdentityInterface(fields=['subject']), 
                   name='subject_infosource')
-subject_infosource.iterables=[('subject', subjects_db)]
+subject_infosource.iterables=[('subject', subjects)]
 
 # iterate over sessions
 session_infosource = Node(util.IdentityInterface(fields=['session']), 
                   name='session_infosource')
 session_infosource.iterables=[('session', sessions)]
 
+# iterate over scans
+scan_infosource = Node(util.IdentityInterface(fields=['scan']), 
+                  name='scan_infosource')
+scan_infosource.iterables=[('scan', scans)]
+
 # select files
-templates={'rest' : 'resting/raw/{subject}_{session}.nii.gz',
+templates={'rest' : 'niftis/{subject}/{session}/{scan}.nii.gz',
            'dicom':'resting/raw/example_dicoms/{subject}*/{session}/*',
            'uni_highres' : 'struct/uni/{subject}*UNI_Images_merged.nii.gz',
            't1_highres' : 'struct/t1/{subject}*T1_Images_merged.nii.gz',
@@ -66,7 +76,8 @@ selectfiles = Node(nio.SelectFiles(templates, base_directory=data_dir),
                    name="selectfiles")
 
 preproc.connect([(subject_infosource, selectfiles, [('subject', 'subject')]),
-                 (session_infosource, selectfiles, [('session', 'session')])
+                 (session_infosource, selectfiles, [('session', 'session')]), 
+                 (scan_infosource, selectfiles, [('scan', 'scan')]),  
                  ])
 
 # remove first volumes
@@ -268,6 +279,6 @@ preproc.connect([(session_infosource, sink, [('session', 'container')]),
                  (motreg, sink, [('out_files', 'confounds.@motreg')])
                  ])
     
-#preproc.run(plugin='MultiProc', plugin_args={'n_procs' : 9})
+preproc.run(plugin='MultiProc', plugin_args={'n_procs' : 9})
 
 preproc.write_graph(dotfilename='func_preproc.dot', graph2use='colored', format='pdf', simple_form=True)
