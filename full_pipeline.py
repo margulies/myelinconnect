@@ -65,12 +65,12 @@ scan_infosource.iterables=[('scan', scans)]
 
 # select files
 templates={'rest' : 'niftis/{subject}/{session}/{scan}.nii.gz',
-           'dicom':'resting/raw/example_dicoms/{subject}*/{session}/*',
-           'uni_highres' : 'struct/uni/{subject}*UNI_Images_merged.nii.gz',
-           't1_highres' : 'struct/t1/{subject}*T1_Images_merged.nii.gz',
-           'brain_mask' : 'struct/mask/{subject}*mask.nii.gz',
-           'segmentation' : 'struct/seg/{subject}*lbls_merged.nii.gz',
-           'csfmask' : 'struct/csfmask/{subject}*T1_Images_merged_seg_merged_sub_csf.nii.gz'
+           'dicom':'dicoms/{subject}/{session}/{scan}', # address tar.xz
+           'uni_lowres' : 'struct/uni/{subject}*UNI_Images_merged.nii.gz', # change to lowres
+           't1_lowres' : 'struct/t1/{subject}*T1_Images_merged.nii.gz', # change to lowres
+           'brain_mask' : 'struct/mask/{subject}*mask.nii.gz', # extract
+           'segmentation' : 'struct/seg/{subject}*lbls_merged.nii.gz', # use freesurfer output instead
+           'csfmask' : 'struct/csfmask/{subject}*T1_Images_merged_seg_merged_sub_csf.nii.gz' # use freesurfer output instead
            }    
 selectfiles = Node(nio.SelectFiles(templates, base_directory=data_dir),
                    name="selectfiles")
@@ -248,7 +248,8 @@ def makebase(subject, out_dir):
 sink = Node(nio.DataSink(parameterization=False),
              name='sink')
   
-preproc.connect([(session_infosource, sink, [('session', 'container')]),
+preproc.connect([(scan_infosource, sink, [('scan', 'container')]),
+                 (session_infosource, sink, [('session', 'container')]),
                  (subject_infosource, sink, [(('subject', makebase, out_dir), 'base_directory')]),
                  (remove_vol, sink, [('out_file', 'realignment.@raw_file')]),
                  (slicemoco, sink, [('out_file', 'realignment.@realigned_file'),
@@ -281,4 +282,4 @@ preproc.connect([(session_infosource, sink, [('session', 'container')]),
     
 preproc.run(plugin='MultiProc', plugin_args={'n_procs' : 9})
 
-preproc.write_graph(dotfilename='func_preproc.dot', graph2use='colored', format='pdf', simple_form=True)
+# preproc.write_graph(dotfilename='func_preproc.dot', graph2use='colored', format='pdf', simple_form=True)
