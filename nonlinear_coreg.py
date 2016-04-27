@@ -11,9 +11,9 @@ def create_nonlinear_pipeline(name='nonlinear'):
     nonlinear=Workflow(name='nonlinear')
     
     # inputnode
-    inputnode=Node(util.IdentityInterface(fields=['t1_highres',
-                                                  'epi2highres_lin',
-                                                  'epi2highres_lin_itk',
+    inputnode=Node(util.IdentityInterface(fields=['t1_lowres',
+                                                  'epi2lowres_lin',
+                                                  'epi2lowres_lin_itk',
                                                   'fov_mask',
                                                   'brain_mask',
                                                   #'highres2lowres_itk'
@@ -21,9 +21,9 @@ def create_nonlinear_pipeline(name='nonlinear'):
                    name='inputnode')
     
     # outputnode                                 
-    outputnode=Node(util.IdentityInterface(fields=['epi2highres_warp',
-                                                   'epi2highres_invwarp',
-                                                   'epi2highres_nonlin',
+    outputnode=Node(util.IdentityInterface(fields=['epi2lowres_warp',
+                                                   'epi2lowres_invwarp',
+                                                   'epi2lowres_nonlin',
                                                    ]),
                     name='outputnode')
     
@@ -39,7 +39,7 @@ def create_nonlinear_pipeline(name='nonlinear'):
                       name='dil_brainmask')
 
     
-    mask_epi = Node(fsl.ApplyMask(out_file='epi2highres_lin_masked.nii.gz'),
+    mask_epi = Node(fsl.ApplyMask(out_file='epi2lowres_lin_masked.nii.gz'),
                     name='mask_epi')
     
     nonlinear.connect([#(inputnode, brainmask, [('brain_mask', 'input_image'),
@@ -48,19 +48,19 @@ def create_nonlinear_pipeline(name='nonlinear'):
                        #(brainmask, dil_brainmask, [('output_image', 'in_file')]),
                        (inputnode, dil_brainmask, [('brain_mask', 'in_file')]),
                        (dil_brainmask, mask_epi, [('binary_file', 'mask_file')]),
-                       (inputnode, mask_epi, [('epi2highres_lin', 'in_file')])
+                       (inputnode, mask_epi, [('epi2lowres_lin', 'in_file')])
                        ])
     
     # transform fov mask and apply to t1       
     transform_fov = Node(ants.ApplyTransforms(dimension=3,
                                               #invert_transform_flags=[True, False],
-                                              output_image='fov_mask_highres.nii.gz',
+                                              output_image='fov_mask_lowres.nii.gz',
                                               interpolation = 'NearestNeighbor'),
                           'transform_fov')
     
     dilate_fov = Node(fs.Binarize(min=0.5,
                                   dilate=5,
-                                  binary_file='fov_mask_highres_dil.nii.gz'),
+                                  binary_file='fov_mask_lowres_dil.nii.gz'),
                       name='dilate_fov')   
     
     
@@ -68,11 +68,11 @@ def create_nonlinear_pipeline(name='nonlinear'):
                     name='mask_t1')
     
     nonlinear.connect([(inputnode, transform_fov, [('fov_mask', 'input_image'),
-                                                   ('t1_highres', 'reference_image'),
-                                                   ('epi2highres_lin_itk', 'transforms')]),
+                                                   ('t1_lowres', 'reference_image'),
+                                                   ('epi2lowres_lin_itk', 'transforms')]),
                        (transform_fov, dilate_fov, [('output_image', 'in_file')]),
                        (dilate_fov, mask_t1, [('binary_file', 'mask_file')]),
-                       (inputnode, mask_t1, [('t1_highres', 'in_file')]),
+                       (inputnode, mask_t1, [('t1_lowres', 'in_file')]),
                        ])
     
     
@@ -98,13 +98,13 @@ def create_nonlinear_pipeline(name='nonlinear'):
                                                            output_warped_image = True,
                                                            interpolation = 'BSpline'),
                       name = 'antsreg')
-    antsreg.plugin_args={'submit_specs': 'request_memory = 20000'}
+    antsreg.plugin_args={'submit_specs': 'request_memory = 8000'}
        
     nonlinear.connect([(mask_epi, antsreg, [('out_file', 'moving_image')]),
                        (mask_t1, antsreg, [('out_file', 'fixed_image')]),
-                       (antsreg, outputnode, [('reverse_transforms', 'epi2highres_invwarp'),
-                                              ('forward_transforms', 'epi2highres_warp'),
-                                              ('warped_image', 'epi2highres_nonlin')])
+                       (antsreg, outputnode, [('reverse_transforms', 'epi2lowres_invwarp'),
+                                              ('forward_transforms', 'epi2lowres_warp'),
+                                              ('warped_image', 'epi2lowres_nonlin')])
                         ])
      
     return nonlinear
